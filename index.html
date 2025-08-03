@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vigenère Cipher</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e0f7fa, #f0f4c3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #212121;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 30px;
+      color: #1a237e;
+    }
+
+    .toggle-container {
+      margin: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-label {
+      font-size: 16px;
+      font-weight: bold;
+      color: #283593;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #00bcd4;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    .card {
+      background: #ffffffee;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 20px 50px 30px 20px;
+      max-width: 500px;
+      width: 90%;
+      margin-bottom: 40px;
+      display: none;
+    }
+
+    .card.active {
+      display: block;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #1a237e;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+      background-color: #f9fbe7;
+    }
+
+    textarea {
+      height: 120px;
+      resize: none;
+    }
+
+    .file-upload {
+      border: 2px dashed #00bcd4;
+      padding: 40px 20px;
+      text-align: center;
+      border-radius: 12px;
+      background: #e0f7fa;
+      color: #00796b;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .file-upload input[type="file"] {
+      display: none;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background-color: #1a237e;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      flex: 1;
+    }
+
+    .btn:hover {
+      background-color: #3949ab;
+    }
+
+    .output-box {
+      margin-top: 15px;
+      word-break: break-word;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>Vigenere Cipher Tool</h1>
+
+  <div class="toggle-container">
+    <span class="toggle-label">Text</span>
+    <label class="switch">
+      <input type="checkbox" id="modeToggle">
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">File</span>
+  </div>
+
+  <!-- Text Mode Card -->
+  <div id="textCard" class="card active">
+    <div class="input-group">
+      <label for="textInput">Enter Text</label>
+      <textarea id="textInput" placeholder="Type your message here..."></textarea>
+    </div>
+    <div class="input-group">
+      <label for="textKey">Enter Key</label>
+      <input type="text" id="textKey" placeholder="Enter encryption key">
+    </div>
+    <button class="btn" onclick="encryptText()">Encrypt Text</button>
+    <button class="btn" onclick="decryptText()">Decrypt Text</button>
+    <div class="output-box" id="textOutput"></div>
+  </div>
+
+  <!-- File Mode Card -->
+  <div id="fileCard" class="card">
+    <div class="input-group">
+      <label for="fileKey">Enter Key</label>
+      <input type="text" id="fileKey" placeholder="Enter encryption key">
+    </div>
+
+    <label class="file-upload">
+       Click to Browse File
+      <input type="file" id="fileInput">
+    </label>
+
+    <button class="btn" onclick="encryptFile()">Encrypt File</button>
+    <button class="btn" onclick="decryptFile()">Decrypt File</button>
+    <a id="downloadLink" class="btn hidden" download>Download Result</a>
+  </div>
+
+  <script>
+    const modeToggle = document.getElementById("modeToggle");
+    const textCard = document.getElementById("textCard");
+    const fileCard = document.getElementById("fileCard");
+
+    modeToggle.addEventListener("change", () => {
+      if (modeToggle.checked) {
+        textCard.classList.remove("active");
+        fileCard.classList.add("active");
+      } else {
+        fileCard.classList.remove("active");
+        textCard.classList.add("active");
+      }
+    });
+
+    function vigenereEncrypt(text, key) {
+      key = key.toUpperCase().replace(/[^A-Z]/g, '');
+      let result = '';
+      let j = 0;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c.match(/[A-Za-z]/)) {
+          const isUpper = c === c.toUpperCase();
+          const base = isUpper ? 65 : 97;
+          const pi = c.charCodeAt(0) - base;
+          const ki = key.charCodeAt(j % key.length) - 65;
+          const encryptedChar = String.fromCharCode(((pi + ki) % 26) + base);
+          result += encryptedChar;
+          j++;
+        } else {
+          result += c;
+        }
+      }
+      return result;
+    }
+
+    function vigenereDecrypt(text, key) {
+      key = key.toUpperCase().replace(/[^A-Z]/g, '');
+      let result = '';
+      let j = 0;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c.match(/[A-Za-z]/)) {
+          const isUpper = c === c.toUpperCase();
+          const base = isUpper ? 65 : 97;
+          const ci = c.charCodeAt(0) - base;
+          const ki = key.charCodeAt(j % key.length) - 65;
+          const decryptedChar = String.fromCharCode(((ci - ki + 26) % 26) + base);
+          result += decryptedChar;
+          j++;
+        } else {
+          result += c;
+        }
+      }
+      return result;
+    }
+
+    function encryptText() {
+      const text = document.getElementById("textInput").value;
+      const key = document.getElementById("textKey").value;
+      if (!text || !key) {
+        alert("Please enter both text and key.");
+        return;
+      }
+      const encrypted = vigenereEncrypt(text, key);
+      document.getElementById("textOutput").innerText = "🔐 Encrypted: " + encrypted;
+    }
+
+    function decryptText() {
+      const text = document.getElementById("textInput").value;
+      const key = document.getElementById("textKey").value;
+      if (!text || !key) {
+        alert("Please enter both encrypted text and key.");
+        return;
+      }
+      const decrypted = vigenereDecrypt(text, key);
+      document.getElementById("textOutput").innerText = "🔓 Decrypted: " + decrypted;
+    }
+
+    function encryptFile() {
+      const fileInput = document.getElementById("fileInput");
+      const key = document.getElementById("fileKey").value;
+      const downloadLink = document.getElementById("downloadLink");
+
+      if (!fileInput.files.length || !key) {
+        alert("Please choose a file and enter a key.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const content = e.target.result;
+        const text = new TextDecoder().decode(content);
+        const encrypted = vigenereEncrypt(text, key);
+        const blob = new Blob([encrypted], { type: file.type });
+        const url = URL.createObjectURL(blob);
+
+        downloadLink.href = url;
+        downloadLink.download = "encrypted_" + file.name;
+        downloadLink.classList.remove("hidden");
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    function decryptFile() {
+      const fileInput = document.getElementById("fileInput");
+      const key = document.getElementById("fileKey").value;
+      const downloadLink = document.getElementById("downloadLink");
+
+      if (!fileInput.files.length || !key) {
+        alert("Please choose a file and enter a key.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function(e) {
+        const content = e.target.result;
+        const text = new TextDecoder().decode(content);
+        const decrypted = vigenereDecrypt(text, key);
+        const blob = new Blob([decrypted], { type: file.type });
+        const url = URL.createObjectURL(blob);
+
+        downloadLink.href = url;
+        downloadLink.download = "decrypted_" + file.name;
+        downloadLink.classList.remove("hidden");
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+
+</body>
+</html>
